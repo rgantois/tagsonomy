@@ -1,5 +1,5 @@
 from scanner import scan_files
-from tagger import update_tags, commit
+from tagger import Tagger
 import fnmatch
 import os
 import string
@@ -9,7 +9,7 @@ def validate_tag(tag: str):
 	return tag == "".join([c for c in tag if c in string.ascii_letters + "-_"])
 
 def validate_match(match):
-	return match == "".join([c for c in match if c in string.ascii_letters + "-_/ " + "*"])
+	return match == "".join([c for c in match if c in string.ascii_letters + string.digits + "-_/. " + "*"])
 
 def parse_rules(rule_file):
 	for line in rule_file:
@@ -17,6 +17,8 @@ def parse_rules(rule_file):
 			continue
 
 		(tag,colon,match) = line.strip("\n").partition(":")
+
+		match = match.strip(" ")
 
 		if not validate_tag(tag):
 			print("Invalid tag {tag}!!")
@@ -56,18 +58,19 @@ def classify_file(filepath: str, rules: list) -> set:
 	return tags
 			
 	
-def classify(root: str):
+def classify(root: str, tagfs_root: str):
 	t0 = time.time()
 	nb_files = 0
 
-	rules = load_rules(root)
+	rules = load_rules(tagfs_root)
+	print(rules)
 
-	for filepath in scan_files(root):
+	tagger = Tagger(tagfs_root)
+
+	for filepath in scan_files(root, tagfs_root):
 		tags = classify_file(filepath, rules)
-		update_tags(filepath, tags)
+		tagger.update_tags(filepath, tags)
 		nb_files += 1
-
-	commit()
 
 	print(f"Classified {nb_files} files in {time.time() - t0} seconds!")
 
